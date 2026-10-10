@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstring>
 #include <openssl/des.h> 
+#include <fstream>
 typedef uint64_t KeyType; 
 
 void preparar_llave(KeyType key_val, DES_cblock &key) {
@@ -53,15 +54,15 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    char mensaje[1024] = "Hola como estas, este es un mensaje secreto que vamos a cifrar y luego descifrar usando fuerza bruta.";
-    const char* keyword = "paralela";
+    char mensaje[1024] = "Calabaza, calabaza. Cada quien para su casa.";
+    const char* keyword = "calabaza";
     
-    KeyType llave_secreta = 123456; 
+    KeyType llave_secreta = 173800;
     
     int len = strlen(mensaje);
     int padding = 8 - (len % 8);
     if (padding != 8) {
-        for (int i = 0; i < padding; i++) mensaje[len + i] = ' '; // Relleno con espacios
+        for (int i = 0; i < padding; i++) mensaje[len + i] = ' ';
         len += padding;
         mensaje[len] = '\0';
     }
@@ -70,8 +71,14 @@ int main(int argc, char** argv) {
         std::cout << "Texto original: " << mensaje << "\n";
         
         encrypt(llave_secreta, mensaje, len);
-        std::cout << "Texto cifrado: " << mensaje << "\n\n";
-        
+        std::ofstream archivo_salida("textoequipo10.bin", std::ios::binary);
+        if (archivo_salida.is_open()) {
+            archivo_salida.write(mensaje, len);
+            archivo_salida.close();
+            std::cout << "Archivo generado correctamente.\n";
+        } else {
+            std::cerr << "Error: No se pudo crear el archivo\n";
+        }
         std::cout << "Iniciando fuerza bruta \n";
         double start_time = MPI_Wtime();
         
