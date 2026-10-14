@@ -1,0 +1,33 @@
+{
+  "fecha_utc": "2026-10-14T13:27:23.805108+00:00",
+  "plataforma": "macOS-26.2-arm64-arm-64bit-Mach-O",
+  "arquitectura": "arm64",
+  "cpu": "Apple M2",
+  "nucleos_fisicos": "8",
+  "nucleos_logicos": 8,
+  "mpi": "mpirun (Open MPI) 5.0.11\n\nReport bugs to https://www.open-mpi.org/community/help/",
+  "compilador": "Apple clang version 15.0.0 (clang-1500.3.9.4)\nTarget: arm64-apple-darwin25.2.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+  "openssl": "OpenSSL 3.6.5 29 Sep 2026 (Library: OpenSSL 3.6.5 29 Sep 2026)",
+  "git_commit": "ddae4a7b93bdb9ce575407ef1f852455ea0bfaeb",
+  "git_estado": "?? .vscode/\n?? benchmarks/\n?? instrucciones/\n?? resultados/",
+  "makefile": "# ================================================================\n# Makefile - Proyecto #2 Computacion Paralela (CC3069) - UVG\n# ----------------------------------------------------------------\n# Compila las tres herramientas:\n#   bruteforce_seq : version secuencial (baseline de speedup)\n#   bruteforce_mpi : version paralela con OpenMPI\n#   cifrar         : utilitario para generar textos cifrados .bin\n#\n# Requiere: OpenMPI (mpicxx) y OpenSSL (libcrypto).\n# En macOS/Homebrew se detecta openssl@3 automaticamente.\n# ================================================================\n\n# Prefijo de OpenSSL (Homebrew en macOS; /usr en Linux tipico).\nOPENSSL ?= $(shell brew --prefix openssl@3 2>/dev/null || echo /usr)\n\nCXX       = mpicxx\nCXXFLAGS  = -O2 -std=c++17 -Wall -Wextra -Wpedantic -Wno-deprecated-declarations -I$(OPENSSL)/include\nLDFLAGS   = -L$(OPENSSL)/lib -lcrypto\nPYTHON    ?= python3\n\nBINARIOS  = bruteforce_seq bruteforce_mpi cifrar\nHEADERS   = des_utils.h app_utils.h\n\nall: $(BINARIOS)\n\nbruteforce_seq: bruteforce_seq.cpp $(HEADERS)\n\t$(CXX) $(CXXFLAGS) -o $@ bruteforce_seq.cpp $(LDFLAGS)\n\nbruteforce_mpi: bruteforce_mpi.cpp $(HEADERS)\n\t$(CXX) $(CXXFLAGS) -o $@ bruteforce_mpi.cpp $(LDFLAGS)\n\ncifrar: cifrar.cpp $(HEADERS)\n\t$(CXX) $(CXXFLAGS) -o $@ cifrar.cpp $(LDFLAGS)\n\n.test-build:\n\tmkdir -p $@\n\n.test-build/test_core: tests/test_core.cpp $(HEADERS) | .test-build\n\t$(CXX) $(CXXFLAGS) -I. -o $@ tests/test_core.cpp $(LDFLAGS)\n\n.test-build/bruteforce_mpi_sync: bruteforce_mpi.cpp tests/synchronous_send.cpp $(HEADERS) | .test-build\n\t$(CXX) $(CXXFLAGS) -o $@ bruteforce_mpi.cpp tests/synchronous_send.cpp $(LDFLAGS)\n\ntest: all .test-build/test_core\n\t./.test-build/test_core\n\t$(PYTHON) tests/test_integration.py\n\ntest-sync: all .test-build/bruteforce_mpi_sync\n\tMPI_BINARY=\"$(CURDIR)/.test-build/bruteforce_mpi_sync\" $(PYTHON) tests/test_integration.py\n\nclean:\n\trm -f $(BINARIOS)\n\trm -rf .test-build\n\n.PHONY: all clean test test-sync\n",
+  "sha256_binarios": {
+    "cifrar": "e8f33677f938d4a1ac1ff19de3aa9d0f7267085bfd751003e9a56148c768bedf",
+    "bruteforce_seq": "98574f5428088c27eb246828062ed6c6405923f794729153de9d7b20f1ee16b3",
+    "bruteforce_mpi": "89b9af95ef9f520d808a66ba5be3d2072e4cf0bb4d2b5bcac5b24a6bba16e0b7"
+  },
+  "texto": "/Users/jorgelopez/Downloads/Proyecto2Paralela/prueba.txt",
+  "texto_sha256": "b98498c242fd3a3d6b2513722e7d4596ebc32418a1dcbbe1193fa03c03e5387a",
+  "palabra": "jacaranda",
+  "limite": 4194304,
+  "repeticiones": 10,
+  "procesos": [
+    2,
+    4,
+    6,
+    8
+  ],
+  "semilla_orden": 3069,
+  "calentamientos_por_configuracion": 1,
+  "nota": "Casos adaptados al rango reducido; no recorre 2^56. Tiempo interno para speedup; tiempo externo incluye lanzamiento."
+}

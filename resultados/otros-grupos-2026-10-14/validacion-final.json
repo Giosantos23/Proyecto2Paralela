@@ -1,0 +1,13 @@
+{
+  "grupos_finales": [
+    1,
+    7
+  ],
+  "mediciones": 180,
+  "configuraciones": 18,
+  "repeticiones_por_configuracion": 10,
+  "calentamientos": 18,
+  "descifrado_igual_a_openssl": true,
+  "hashes_originales_sin_cambios": true,
+  "repeticiones_y_calculos_verificados": true
+}

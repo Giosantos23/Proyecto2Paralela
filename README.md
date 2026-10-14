@@ -156,7 +156,7 @@ Una excepción inesperada durante la ejecución llama a `MPI_Abort` para no
 dejar otros procesos esperando; los errores de entrada normales usan la
 salida coordinada descrita anteriormente.
 
-## Tiempos y trabajo pendiente de experimentación
+## Tiempos y resultados experimentales
 
 La versión secuencial usa `steady_clock`; la paralela sincroniza el inicio
 con `MPI_Barrier`, mide con `MPI_Wtime` y usa `MPI_Reduce` con `MPI_MAX` para
@@ -164,25 +164,38 @@ reportar el tiempo del proceso más lento. Incluye búsqueda y protocolo de
 terminación; excluye lectura, difusión inicial, impresión y arranque de
 `mpirun`. Ambas versiones reutilizan un buffer de descifrado.
 
-Para completar las actividades 7, 9, 10 y 11:
+Experimentos completados el 14 de octubre de 2026:
 
-- Mantener el mismo texto, palabra, límite, versión y representación de llave
-  al comparar secuencial, bloques y cíclico. Usar llaves efectivas y registrar
-  su posición relativa en el rango, además de los intentos realizados.
-- Realizar las repeticiones requeridas y promediar. Calcular
-  `speedup = promedio(Tseq) / promedio(Tpar)` y `eficiencia = speedup / N`.
-- Probar al menos dos textos de otros grupos, con un mínimo de diez pruebas
-  por texto, variando el número de procesos en incrementos/decrementos de dos.
-- Registrar equipo, compilador, versiones de MPI/OpenSSL, procesos, tiempos,
-  profiling y condiciones de ejecución; elaborar tablas, gráficas y bitácora.
-- Actualizar el informe, diagramas y catálogo de funciones con el protocolo
-  actual, y completar conclusiones, referencias y entrega del código fuente.
+- **Rendimiento controlado:** 270 mediciones, diez repeticiones por
+  configuración, tres posiciones de llave en un rango de `2^22`, procesos
+  2, 4, 6 y 8, con reparto por bloques y cíclico.
+- **Profiling:** muestreo CPU y 72 ejecuciones MPI instrumentadas, con
+  registros por rank y tiempos dentro de las llamadas MPI.
+- **Textos externos:** grupos 1 y 7, usando sus archivos originales y rangos
+  publicados. Se completaron 180 mediciones: diez repeticiones de nueve
+  configuraciones por texto, más 18 calentamientos.
+- Los resultados, gráficas, comandos, versiones y validaciones están en
+  `resultados/`. La evidencia de textos externos está en
+  [`EVIDENCIA_OTROS_GRUPOS.md`](resultados/otros-grupos-2026-10-14/EVIDENCIA_OTROS_GRUPOS.md).
+
+El informe final está en
+[`Informe_Proyecto2_MPI.pdf`](informe/Informe_Proyecto2_MPI.pdf), con diagramas,
+catálogo de funciones, bitácora y referencias. La descripción del documento
+está en [`informe/README.md`](informe/README.md). Falta confirmar
+los requisitos de entrega que ocurren fuera del repositorio. El rango reducido de los casos controlados
+se documentó como adaptación experimental de las posiciones de la actividad 9.
 
 Las pruebas automáticas siguientes verifican corrección. No sustituyen esa
 bitácora ni demuestran consistencia del speedup. El ensayo de `2^56` valida
 la cota con una solución temprana; no recorre exhaustivamente ese espacio.
 
 ## Pruebas reproducibles
+
+Los experimentos de rendimiento y sus gráficas se reproducen con
+[`benchmarks/README.md`](benchmarks/README.md). El muestreo CPU y los perfiles
+MPI por proceso se reproducen con
+[`benchmarks/PROFILING.md`](benchmarks/PROFILING.md), usando ejecutables
+instrumentados independientes mediante `make profile`.
 
 ```bash
 make test

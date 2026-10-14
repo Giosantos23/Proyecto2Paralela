@@ -1,0 +1,2 @@
+/Users/jorgelopez/Downloads/Proyecto2Paralela/.profile-build/bruteforce_seq /Users/jorgelopez/Downloads/Proyecto2Paralela/resultados/profiling-2026-10-14/cpu.bin jacaranda 16777216
+/usr/bin/sample 41811 8 1 -mayDie -file /Users/jorgelopez/Downloads/Proyecto2Paralela/resultados/profiling-2026-10-14/cpu-sample.txt

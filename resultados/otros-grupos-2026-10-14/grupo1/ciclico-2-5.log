@@ -1,0 +1,14 @@
+=== Fuerza bruta PARALELA (MPI) ===
+Procesos        : 2
+Modo de reparto : ciclico
+Archivo cifrado : /Users/jorgelopez/Downloads/Proyecto2Paralela/textos_otros_grupos/equipo1_mensaje.bin
+Palabra clave   : quetzal sincronizado en MPI
+Espacio llaves  : [0, 200000) (indices efectivos DES)
+Longitud texto  : 816 bytes
+
+Llave encontrada : 173421
+Llave DES (hex)  : da94150101010101
+Texto descifrado : Durante el desarrollo de este proyecto comprobamos que dividir un problema entre varios procesos no garantiza automaticamente un mejor rendimiento. La posicion de la llave, la cantidad de procesos y la frecuencia de comunicacion pueden cambiar bastante los tiempos obtenidos. Para comparar las estrategias usamos el mismo texto, el mismo rango y varias repeticiones en cada configuracion. La frase quetzal sincronizado en MPI funciona como marcador unico para reconocer el descifrado correcto. Tambien registramos la cantidad de intentos y las caracteristicas del equipo, porque un solo tiempo no representa de forma adecuada el comportamiento del programa. Con estas mediciones buscamos entender cuando la distribucion por bloques pierde consistencia y si la distribucion ciclica ofrece resultados mas estables.
+
+Llaves probadas  : 173751
+Tiempo paralelo  : 0.63625 segundos.

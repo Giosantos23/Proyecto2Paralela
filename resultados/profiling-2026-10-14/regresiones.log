@@ -1,0 +1,57 @@
+mpicxx -O2 -std=c++17 -Wall -Wextra -Wpedantic -Wno-deprecated-declarations -I/opt/homebrew/opt/openssl@3/include -o bruteforce_mpi bruteforce_mpi.cpp -L/opt/homebrew/opt/openssl@3/lib -lcrypto
+./.test-build/test_core
+OK: vector DES, 65536 llaves unicas, 56 bits, paridad, legacy, substring y reparto.
+python3 tests/test_integration.py
+test_every_small_key_is_reachable (__main__.Integration.test_every_small_key_is_reachable) ... ok
+test_files_and_arguments (__main__.Integration.test_files_and_arguments) ... ok
+test_full_56_bit_limit_with_early_solution (__main__.Integration.test_full_56_bit_limit_with_early_solution) ... ok
+test_invalid_numbers (__main__.Integration.test_invalid_numbers) ... ok
+test_legacy_fixture_from_original_commit (__main__.Integration.test_legacy_fixture_from_original_commit) ... ok
+test_multiple_valid_candidates (__main__.Integration.test_multiple_valid_candidates) ... ok
+test_not_found_exhausts_exactly_once (__main__.Integration.test_not_found_exhausts_exactly_once) ... ok
+test_oversized_sparse_file (__main__.Integration.test_oversized_sparse_file) ... ok
+test_plaintext_with_nul_and_unaligned_keyword (__main__.Integration.test_plaintext_with_nul_and_unaligned_keyword) ... ok
+test_roundtrip_boundaries_and_partitions (__main__.Integration.test_roundtrip_boundaries_and_partitions) ... ok
+test_text_limit_and_long_keyword (__main__.Integration.test_text_limit_and_long_keyword) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 23.311s
+
+OK
+Ejecuciones verificadas: 173; binario MPI: bruteforce_mpi
+mpicxx -O2 -std=c++17 -Wall -Wextra -Wpedantic -Wno-deprecated-declarations -I/opt/homebrew/opt/openssl@3/include -o .test-build/bruteforce_mpi_sync bruteforce_mpi.cpp tests/synchronous_send.cpp -L/opt/homebrew/opt/openssl@3/lib -lcrypto
+MPI_BINARY="/Users/jorgelopez/Downloads/Proyecto2Paralela/.test-build/bruteforce_mpi_sync" python3 tests/test_integration.py
+test_every_small_key_is_reachable (__main__.Integration.test_every_small_key_is_reachable) ... ok
+test_files_and_arguments (__main__.Integration.test_files_and_arguments) ... ok
+test_full_56_bit_limit_with_early_solution (__main__.Integration.test_full_56_bit_limit_with_early_solution) ... ok
+test_invalid_numbers (__main__.Integration.test_invalid_numbers) ... ok
+test_legacy_fixture_from_original_commit (__main__.Integration.test_legacy_fixture_from_original_commit) ... ok
+test_multiple_valid_candidates (__main__.Integration.test_multiple_valid_candidates) ... ok
+test_not_found_exhausts_exactly_once (__main__.Integration.test_not_found_exhausts_exactly_once) ... ok
+test_oversized_sparse_file (__main__.Integration.test_oversized_sparse_file) ... ok
+test_plaintext_with_nul_and_unaligned_keyword (__main__.Integration.test_plaintext_with_nul_and_unaligned_keyword) ... ok
+test_roundtrip_boundaries_and_partitions (__main__.Integration.test_roundtrip_boundaries_and_partitions) ... ok
+test_text_limit_and_long_keyword (__main__.Integration.test_text_limit_and_long_keyword) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 25.337s
+
+OK
+Ejecuciones verificadas: 173; binario MPI: bruteforce_mpi_sync
+test_every_small_key_is_reachable (__main__.Integration.test_every_small_key_is_reachable) ... ok
+test_files_and_arguments (__main__.Integration.test_files_and_arguments) ... ok
+test_full_56_bit_limit_with_early_solution (__main__.Integration.test_full_56_bit_limit_with_early_solution) ... ok
+test_invalid_numbers (__main__.Integration.test_invalid_numbers) ... ok
+test_legacy_fixture_from_original_commit (__main__.Integration.test_legacy_fixture_from_original_commit) ... ok
+test_multiple_valid_candidates (__main__.Integration.test_multiple_valid_candidates) ... ok
+test_not_found_exhausts_exactly_once (__main__.Integration.test_not_found_exhausts_exactly_once) ... ok
+test_oversized_sparse_file (__main__.Integration.test_oversized_sparse_file) ... ok
+test_plaintext_with_nul_and_unaligned_keyword (__main__.Integration.test_plaintext_with_nul_and_unaligned_keyword) ... ok
+test_roundtrip_boundaries_and_partitions (__main__.Integration.test_roundtrip_boundaries_and_partitions) ... ok
+test_text_limit_and_long_keyword (__main__.Integration.test_text_limit_and_long_keyword) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 27.978s
+
+OK
+Ejecuciones verificadas: 173; binario MPI: bruteforce_mpi

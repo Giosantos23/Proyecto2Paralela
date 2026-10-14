@@ -1,0 +1,13 @@
+=== Fuerza bruta PARALELA (MPI) ===
+Procesos        : 8
+Modo de reparto : ciclico
+Archivo cifrado : /Users/jorgelopez/Downloads/Proyecto2Paralela/resultados/profiling-2026-10-14/facil.bin
+Palabra clave   : jacaranda
+Espacio llaves  : [0, 4194304) (indices efectivos DES)
+Longitud texto  : 152 bytes
+
+Llave encontrada : 2097153
+Llave DES (hex)  : 0201010201010101
+Texto descifrado : Los equipos deben utilizar MPI para encontrar la llave privada mediante fuerza bruta sobre DES. La palabra clave jacaranda es unica en este texto.      
+Llaves probadas  : 2043905
+Tiempo paralelo  : 0.496329 segundos.

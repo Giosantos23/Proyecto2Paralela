@@ -1,0 +1,32 @@
+{
+  "fecha_utc": "2026-10-14T14:23:11.786505+00:00",
+  "grupo": 7,
+  "archivo_original": "/Users/jorgelopez/Downloads/Proyecto2Paralela/textos_otros_grupos/textoGrupo7.bin",
+  "bytes": 992,
+  "sha256_original": "edda33babaef3fa7274981fefa3f8cf1df53f5f08ec46d8d7c504f218db933d0",
+  "palabra": "se le olvida como manejar",
+  "llave_efectiva": 3412587,
+  "limite": 4194304,
+  "repeticiones": 10,
+  "procesos": [
+    2,
+    4,
+    6,
+    8
+  ],
+  "semilla": 3069,
+  "cpu": "Apple M2",
+  "nucleos_fisicos": 8,
+  "mpi": "mpirun (Open MPI) 5.0.11\n\nReport bugs to https://www.open-mpi.org/community/help/",
+  "compilador": "Apple clang version 15.0.0 (clang-1500.3.9.4)\nTarget: arm64-apple-darwin25.2.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+  "openssl": "OpenSSL 3.6.5 29 Sep 2026 (Library: OpenSSL 3.6.5 29 Sep 2026)",
+  "commit": "ddae4a7b93bdb9ce575407ef1f852455ea0bfaeb",
+  "binarios_sha256": {
+    "bruteforce_seq": "98574f5428088c27eb246828062ed6c6405923f794729153de9d7b20f1ee16b3",
+    "bruteforce_mpi": "89b9af95ef9f520d808a66ba5be3d2072e4cf0bb4d2b5bcac5b24a6bba16e0b7"
+  },
+  "makefile": "# ================================================================\n# Makefile - Proyecto #2 Computacion Paralela (CC3069) - UVG\n# ----------------------------------------------------------------\n# Compila las tres herramientas:\n#   bruteforce_seq : version secuencial (baseline de speedup)\n#   bruteforce_mpi : version paralela con OpenMPI\n#   cifrar         : utilitario para generar textos cifrados .bin\n#\n# Requiere: OpenMPI (mpicxx) y OpenSSL (libcrypto).\n# En macOS/Homebrew se detecta openssl@3 automaticamente.\n# ================================================================\n\n# Prefijo de OpenSSL (Homebrew en macOS; /usr en Linux tipico).\nOPENSSL ?= $(shell brew --prefix openssl@3 2>/dev/null || echo /usr)\n\nCXX       = mpicxx\nCXXFLAGS  = -O2 -std=c++17 -Wall -Wextra -Wpedantic -Wno-deprecated-declarations -I$(OPENSSL)/include\nLDFLAGS   = -L$(OPENSSL)/lib -lcrypto\nPYTHON    ?= python3\n\nBINARIOS  = bruteforce_seq bruteforce_mpi cifrar\nHEADERS   = des_utils.h app_utils.h\n\nall: $(BINARIOS)\n\nbruteforce_seq: bruteforce_seq.cpp $(HEADERS)\n\t$(CXX) $(CXXFLAGS) -o $@ bruteforce_seq.cpp $(LDFLAGS)\n\nbruteforce_mpi: bruteforce_mpi.cpp $(HEADERS)\n\t$(CXX) $(CXXFLAGS) -o $@ bruteforce_mpi.cpp $(LDFLAGS)\n\ncifrar: cifrar.cpp $(HEADERS)\n\t$(CXX) $(CXXFLAGS) -o $@ cifrar.cpp $(LDFLAGS)\n\n.test-build:\n\tmkdir -p $@\n\n.test-build/test_core: tests/test_core.cpp $(HEADERS) | .test-build\n\t$(CXX) $(CXXFLAGS) -I. -o $@ tests/test_core.cpp $(LDFLAGS)\n\n.test-build/bruteforce_mpi_sync: bruteforce_mpi.cpp tests/synchronous_send.cpp $(HEADERS) | .test-build\n\t$(CXX) $(CXXFLAGS) -o $@ bruteforce_mpi.cpp tests/synchronous_send.cpp $(LDFLAGS)\n\ntest: all .test-build/test_core\n\t./.test-build/test_core\n\t$(PYTHON) tests/test_integration.py\n\ntest-sync: all .test-build/bruteforce_mpi_sync\n\tMPI_BINARY=\"$(CURDIR)/.test-build/bruteforce_mpi_sync\" $(PYTHON) tests/test_integration.py\n\nclean:\n\trm -f $(BINARIOS)\n\trm -rf .test-build .profile-build\n\n.PHONY: all clean test test-sync\n\n# Binarios independientes con símbolos e instrumentación para profiling.\n.profile-build:\n\tmkdir -p $@\n\n.profile-build/bruteforce_seq: bruteforce_seq.cpp $(HEADERS) | .profile-build\n\t$(CXX) $(CXXFLAGS) -g -o $@ bruteforce_seq.cpp $(LDFLAGS)\n\n.profile-build/bruteforce_mpi: bruteforce_mpi.cpp benchmarks/profile_mpi.cpp benchmarks/profile_mpi.h $(HEADERS) | .profile-build\n\t$(CXX) $(CXXFLAGS) -g -DPERFIL_MPI -o $@ bruteforce_mpi.cpp benchmarks/profile_mpi.cpp $(LDFLAGS)\n\nprofile: .profile-build/bruteforce_seq .profile-build/bruteforce_mpi\n\n.PHONY: profile\n",
+  "afinidad": "sin afinidad fija; localhost; sin sobresuscripción",
+  "tiempo_speedup": "tiempo interno de búsqueda; cociente de promedios",
+  "fuente": "Publicación de Canvas transcrita en textos_otros_grupos/README.md"
+}

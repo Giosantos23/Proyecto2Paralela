@@ -1,0 +1,14 @@
+{
+  "ejecuciones_mpi": 72,
+  "configuraciones_mpi": 24,
+  "filas_rank": 360,
+  "repeticiones": 3,
+  "muestras_cpu": 6784,
+  "suma_intentos_y_resultados": true,
+  "particion_tiempos_consistente": true,
+  "regresiones": {
+    "make_test": "OK, 173 ejecuciones y pruebas DES internas",
+    "make_test_sync": "OK, 173 ejecuciones",
+    "mpi_instrumentado": "OK, 173 ejecuciones"
+  }
+}

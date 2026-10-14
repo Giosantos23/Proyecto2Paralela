@@ -1,0 +1,3 @@
+rank,procesos,modo,intentos,total_s,busqueda_s,otro_s,irecv_s,irecv_llamadas,test_s,test_llamadas,send_s,send_llamadas,wait_s,wait_llamadas,waitany_s,waitany_llamadas,waitall_s,waitall_llamadas,bcast_s,bcast_llamadas
+0,2,bloque,921827,1.329168,1.328501,7.79999999997e-05,0,1,0.000292000000001,901,1.3e-05,1,0,0,0,0,0.000282,1,2.00000000006e-06,1
+1,2,bloque,924672,1.329172,1.328804,6.90000000002e-05,2e-06,1,0.00028,904,5.99999999995e-06,1,0,1,0,0,0,0,1.1e-05,1

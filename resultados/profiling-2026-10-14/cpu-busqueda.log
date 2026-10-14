@@ -1,0 +1,11 @@
+=== Fuerza bruta SECUENCIAL ===
+Archivo cifrado : /Users/jorgelopez/Downloads/Proyecto2Paralela/resultados/profiling-2026-10-14/cpu.bin
+Palabra clave   : jacaranda
+Espacio llaves  : [0, 16777216) (indices efectivos DES)
+Longitud texto  : 152 bytes
+
+Llave encontrada : 16777215
+Llave DES (hex)  : fefefe0e01010101
+Texto descifrado : Los equipos deben utilizar MPI para encontrar la llave privada mediante fuerza bruta sobre DES. La palabra clave jacaranda es unica en este texto.      
+Llaves probadas  : 16777216
+Tiempo de busqueda: 23.5618 segundos.

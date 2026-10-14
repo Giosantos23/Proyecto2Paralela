@@ -50,6 +50,20 @@ test-sync: all .test-build/bruteforce_mpi_sync
 
 clean:
 	rm -f $(BINARIOS)
-	rm -rf .test-build
+	rm -rf .test-build .profile-build
 
 .PHONY: all clean test test-sync
+
+# Binarios independientes con símbolos e instrumentación para profiling.
+.profile-build:
+	mkdir -p $@
+
+.profile-build/bruteforce_seq: bruteforce_seq.cpp $(HEADERS) | .profile-build
+	$(CXX) $(CXXFLAGS) -g -o $@ bruteforce_seq.cpp $(LDFLAGS)
+
+.profile-build/bruteforce_mpi: bruteforce_mpi.cpp benchmarks/profile_mpi.cpp benchmarks/profile_mpi.h $(HEADERS) | .profile-build
+	$(CXX) $(CXXFLAGS) -g -DPERFIL_MPI -o $@ bruteforce_mpi.cpp benchmarks/profile_mpi.cpp $(LDFLAGS)
+
+profile: .profile-build/bruteforce_seq .profile-build/bruteforce_mpi
+
+.PHONY: profile

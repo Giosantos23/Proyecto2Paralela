@@ -1,0 +1,8 @@
+{
+  "mediciones": 270,
+  "configuraciones": 27,
+  "repeticiones_por_configuracion": 10,
+  "calentamientos": 27,
+  "llaves_verificadas": 270,
+  "csv_y_resumen_consistentes": true
+}

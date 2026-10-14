@@ -1,0 +1,7 @@
+{
+  "mediciones": 90,
+  "configuraciones": 9,
+  "repeticiones_por_configuracion": 10,
+  "archivo_original_sin_cambios": true,
+  "llave_y_texto_iguales_en_todas_las_busquedas": true
+}

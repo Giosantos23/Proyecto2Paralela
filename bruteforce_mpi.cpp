@@ -9,6 +9,10 @@
 #include <mpi.h>
 #include <array>
 #include "app_utils.h"
+#ifdef PERFIL_MPI
+#include "benchmarks/profile_mpi.h"
+KeyType intentos_perfil = 0;
+#endif
 
 constexpr int TAG_RESULTADO = 1;
 constexpr int TAG_STOP = 2;
@@ -22,6 +26,10 @@ using Reporte = std::array<KeyType, 2>;
 void buscar_lote(Rango &rango, const std::vector<char> &ciph,
                   const std::string &keyword, std::vector<char> &trabajo,
                   Reporte &reporte) {
+    #ifdef PERFIL_MPI
+    const double inicio_lote = MPI_Wtime();
+    const KeyType antes = reporte[1];
+    #endif
     for (KeyType i = 0; i < TAM_LOTE && rango.siguiente < rango.fin; ++i) {
         const KeyType k = rango.siguiente;
         rango.siguiente += rango.paso; // <= 2^56 + size: no desborda uint64_t.
@@ -31,6 +39,10 @@ void buscar_lote(Rango &rango, const std::vector<char> &ciph,
             break;
         }
     }
+    #ifdef PERFIL_MPI
+    perfil_lote(MPI_Wtime() - inicio_lote);
+    intentos_perfil += reporte[1] - antes;
+    #endif
 }
 
 /* Entradas: identificadores MPI, rango propio, cifrado, palabra y buffer.
@@ -161,8 +173,14 @@ int main(int argc, char **argv) {
 
         MPI_Barrier(MPI_COMM_WORLD);
         const double t0 = MPI_Wtime();
+        #ifdef PERFIL_MPI
+        perfil_iniciar();
+        #endif
         const auto resultado = buscar_en_rango(rank, size, rango, ciph, op.keyword, trabajo);
         const double local = MPI_Wtime() - t0;
+        #ifdef PERFIL_MPI
+        perfil_finalizar(rank, size, intentos_perfil, local, op.ciclico);
+        #endif
         double maximo = 0;
         MPI_Reduce(&local, &maximo, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
         if (rank == 0) {

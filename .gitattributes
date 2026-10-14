@@ -1,0 +1,3 @@
+# Los CSV de Python conservan CRLF; los logs mantienen la salida original.
+*.csv whitespace=cr-at-eol
+*.log -whitespace

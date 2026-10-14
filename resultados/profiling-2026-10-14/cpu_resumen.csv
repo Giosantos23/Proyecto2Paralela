@@ -1,0 +1,10 @@
+funcion,muestras,porcentaje
+DES_encrypt1,5794,85.40683962264151
+tryKey (código inline),426,6.279481132075472
+DES_set_key_unchecked,327,4.820165094339623
+DES_ecb_encrypt,145,2.137382075471698
+DYLD-STUB$$DES_ecb_encrypt,56,0.8254716981132075
+DES_set_odd_parity,15,0.22110849056603774
+_platform_memmove,8,0.1179245283018868
+DYLD-STUB$$DES_set_key_unchecked,5,0.07370283018867925
+Otras (<5 muestras por función),8,0.1179245283018868

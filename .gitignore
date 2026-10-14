@@ -6,9 +6,20 @@ cifrar
 
 # Archivos cifrados generados
 *.bin
+!textos_otros_grupos/*.bin
 
 # Artefactos del sistema
 .DS_Store
 *.o
 .test-build/
 __pycache__/
+
+# Ejecutables instrumentados
+.profile-build/
+
+# Configuración local del editor
+.vscode/
+
+# Cifrados de los experimentos finales
+!resultados/rendimiento-10-repeticiones-2026-10-14/*.bin
+!resultados/profiling-2026-10-14/*.bin

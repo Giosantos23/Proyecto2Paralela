@@ -1,0 +1,16 @@
+Now drawing from 'AC Power'
+ -InternalBattery-0 (id=22675555)	31%; discharging; 20:00 remaining present: true
+AC Power:
+ Sleep On Power Button 1
+ lowpowermode         1
+ standby              1
+ ttyskeepawake        1
+ hibernatemode        3
+ powernap             1
+ hibernatefile        /var/vm/sleepimage
+ displaysleep         10
+ womp                 1
+ networkoversleep     0
+ sleep                1
+ tcpkeepalive         1
+ disksleep            10

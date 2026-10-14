@@ -1,0 +1,28 @@
+[
+  {
+    "grupo": 1,
+    "archivo": "textos_otros_grupos/equipo1_mensaje.bin",
+    "palabra": "quetzal sincronizado en MPI",
+    "bytes": 816,
+    "sha256": "71f4a8281f89b0529be845b1ea3aa1fcc7334577fa3a8d16c12d66f3a75f0e39",
+    "rango_publicado_exclusivo": 200000,
+    "llave_efectiva_encontrada": 173421,
+    "llave_des_hex": "da94150101010101",
+    "validacion_independiente": "OpenSSL DES-ECB sin retirar padding; frase exacta encontrada",
+    "fuente": "Publicación del grupo 1 en Canvas; transcripción en textos_otros_grupos/README.md",
+    "estado": "Evidencia final completa: descifrado validado, 90 mediciones por texto y hashes verificados"
+  },
+  {
+    "grupo": 7,
+    "archivo": "textos_otros_grupos/textoGrupo7.bin",
+    "palabra": "se le olvida como manejar",
+    "bytes": 992,
+    "sha256": "edda33babaef3fa7274981fefa3f8cf1df53f5f08ec46d8d7c504f218db933d0",
+    "rango_publicado_exclusivo": 4194304,
+    "llave_efectiva_encontrada": 3412587,
+    "llave_des_hex": "d649a10201010101",
+    "validacion_independiente": "OpenSSL DES-ECB sin retirar padding; frase exacta encontrada",
+    "fuente": "Publicación del grupo 7 en Canvas; transcripción en textos_otros_grupos/README.md",
+    "estado": "Evidencia final completa: descifrado validado, 90 mediciones por texto y hashes verificados"
+  }
+]
