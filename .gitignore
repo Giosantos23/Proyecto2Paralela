@@ -10,3 +10,5 @@ cifrar
 # Artefactos del sistema
 .DS_Store
 *.o
+.test-build/
+__pycache__/

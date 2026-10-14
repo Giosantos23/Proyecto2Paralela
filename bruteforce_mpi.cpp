@@ -1,259 +1,179 @@
 /* ================================================================
- * bruteforce_mpi.cpp
- * ----------------------------------------------------------------
- * Version PARALELA (OpenMPI) del ataque de fuerza bruta sobre DES.
- *
- * Esquema de comunicacion:
- *   1. El proceso maestro (rank 0) lee el archivo cifrado y la
- *      palabra clave, y los distribuye con MPI_Bcast.
- *   2. Cada proceso recorre SU porcion del espacio de llaves segun
- *      el modo de reparto elegido:
- *        - "bloque" : reparto contiguo e ingenuo (naive). El speedup
- *                     depende de donde caiga la llave (Actividad 9).
- *        - "ciclico": reparto intercalado (round-robin). Distribuye
- *                     la ubicacion de la llave para lograr un speedup
- *                     mas consistente (Actividad 10).
- *   3. Cada proceso publica un MPI_Irecv no bloqueante para escuchar
- *      si alguien ya encontro la llave. Al encontrarla, el proceso
- *      hace MPI_Send a TODOS (incluido el mismo) con tag TAG_FOUND,
- *      de modo que cada MPI_Irecv se cierra limpiamente con MPI_Wait.
- *
- * Uso:
- *   mpirun -np <N> ./bruteforce_mpi <archivo_cifrado> <palabra_clave> \
- *          [limite] [modo]
- *
- *   modo : "bloque" (por defecto) o "ciclico"
- *
- * Precondicion: la palabra clave debe ser suficientemente unica para
- * que exista UNA sola llave solucion dentro de [0, limite).
- *
- * Proyecto #2 - Computacion Paralela y Distribuida (CC3069) - UVG
+ * bruteforce_mpi.cpp - Fuerza bruta DES con coordinacion en rank 0.
+ * Uso: mpirun -np N ./bruteforce_mpi archivo.bin palabra [limite] [modo]
+ * Todos los ranks buscan. Cada trabajador envia UN reporte al maestro,
+ * incluso al agotar su rango o recibir STOP; el maestro recibe todos.
+ * No se presupone que exista una solucion ni que esta sea unica.
+ * CC3069 - Proyecto #2, UVG.
  * ================================================================ */
 #include <mpi.h>
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <string>
-#include <cstring>
-#include "des_utils.h"
+#include <array>
+#include "app_utils.h"
 
-/* Etiqueta de los mensajes que anuncian la llave encontrada. */
-static const int TAG_FOUND = 1;
+constexpr int TAG_RESULTADO = 1;
+constexpr int TAG_STOP = 2;
+constexpr KeyType TAM_LOTE = 1024;
+// Elementos: llave candidata (o SIN_LLAVE), numero de intentos locales.
+using Reporte = std::array<KeyType, 2>;
 
-/* Cada cuantas llaves probadas se revisa si otro proceso ya gano.
- * Un valor pequeno reacciona rapido pero sondea mas la red; uno
- * grande reduce el sondeo pero tarda mas en detenerse. */
-static const KeyType INTERVALO_SONDEO = 4096;
-
-/* Limite por defecto del espacio de busqueda (2^25). */
-static const KeyType LIMITE_POR_DEFECTO = (KeyType)1 << 25;
-
-/* ----------------------------------------------------------------
- * Funcion: leer_archivo_cifrado
- * Proposito: (solo rank 0) Carga el contenido binario del texto
- *            cifrado y valida que sea multiplo de 8.
- * Entradas:  ruta (const string&), buffer (vector<char>&).
- * Salidas:   longitud leida, o -1 en caso de error.
- * ---------------------------------------------------------------- */
-int leer_archivo_cifrado(const std::string &ruta, std::vector<char> &buffer) {
-    std::ifstream archivo(ruta, std::ios::binary | std::ios::ate);
-    if (!archivo.is_open()) {
-        std::cerr << "Error: no se pudo abrir el archivo '" << ruta << "'\n";
-        return -1;
-    }
-    std::streamsize tam = archivo.tellg();
-    archivo.seekg(0, std::ios::beg);
-    if (tam <= 0 || tam % 8 != 0) {
-        std::cerr << "Error: longitud invalida (" << tam
-                  << "); debe ser > 0 y multiplo de 8\n";
-        return -1;
-    }
-    buffer.resize(tam);
-    if (!archivo.read(buffer.data(), tam)) {
-        std::cerr << "Error: fallo la lectura de '" << ruta << "'\n";
-        return -1;
-    }
-    return (int)tam;
-}
-
-/* ----------------------------------------------------------------
- * Funcion: buscar_en_rango
- * Proposito: Recorre la porcion de llaves asignada a este proceso,
- *            escuchando en paralelo (MPI_Irecv/MPI_Test) el aviso de
- *            que otro proceso ya encontro la solucion. Al encontrarla
- *            localmente, avisa a todos con MPI_Send.
- * Entradas:  rank, size   - identificador y total de procesos.
- *            inicio, paso - primera llave y salto entre llaves de
- *                           este proceso (define bloque o ciclico).
- *            limite       - cota superior global del espacio.
- *            ciph, len    - texto cifrado y su longitud.
- *            keyword      - frase clave buscada.
- * Salidas:   Retorna la llave solucion (conocida por todos los
- *            procesos al terminar, gracias al MPI_Send global).
- * ---------------------------------------------------------------- */
-KeyType buscar_en_rango(int rank, int size, KeyType inicio, KeyType paso,
-                        KeyType limite, const char *ciph, int len,
-                        const char *keyword) {
-    unsigned long long llave_global = 0; /* buffer del mensaje entrante */
-    MPI_Request req_recv;
-    MPI_Status  estado;
-    int bandera = 0; /* indica si el MPI_Irecv ya se completo */
-
-    /* Publicamos la escucha no bloqueante ANTES de empezar a buscar. */
-    MPI_Irecv(&llave_global, 1, MPI_UNSIGNED_LONG_LONG, MPI_ANY_SOURCE,
-              TAG_FOUND, MPI_COMM_WORLD, &req_recv);
-
-    bool gane = false;
-    KeyType contador = 0;
-    for (KeyType k = inicio; k < limite; k += paso) {
-        /* Cada cierto numero de intentos, revisamos si alguien gano. */
-        if (++contador % INTERVALO_SONDEO == 0) {
-            MPI_Test(&req_recv, &bandera, &estado);
-            if (bandera) break; /* otro proceso ya encontro la llave */
-        }
-
-        if (tryKey(k, ciph, len, keyword)) {
-            /* Encontramos la llave: avisamos a TODOS (incluido uno
-             * mismo, para que nuestro propio MPI_Irecv se cierre). */
-            unsigned long long hallada = (unsigned long long)k;
-            for (int destino = 0; destino < size; destino++) {
-                MPI_Send(&hallada, 1, MPI_UNSIGNED_LONG_LONG, destino,
-                         TAG_FOUND, MPI_COMM_WORLD);
-            }
-            gane = true;
+/* Entradas: rango mutable, datos de busqueda y buffer reutilizable.
+ * Salida: actualiza cursor, candidato e intentos; trabaja como maximo
+ * TAM_LOTE llaves para permitir atender MPI entre lotes. */
+void buscar_lote(Rango &rango, const std::vector<char> &ciph,
+                  const std::string &keyword, std::vector<char> &trabajo,
+                  Reporte &reporte) {
+    for (KeyType i = 0; i < TAM_LOTE && rango.siguiente < rango.fin; ++i) {
+        const KeyType k = rango.siguiente;
+        rango.siguiente += rango.paso; // <= 2^56 + size: no desborda uint64_t.
+        ++reporte[1];
+        if (tryKey(k, ciph, keyword, trabajo)) {
+            reporte[0] = k;
             break;
         }
     }
-
-    /* Cierre del MPI_Irecv pendiente:
-     *  - Si 'bandera' ya es true, MPI_Test lo completo: no esperamos.
-     *  - Si ganamos, nuestro propio MPI_Send llega a nosotros: esperamos.
-     *  - Si agotamos el rango sin ganar, esperamos al mensaje del
-     *    verdadero ganador (bloquea hasta que llegue). */
-    (void)gane;
-    if (!bandera) {
-        MPI_Wait(&req_recv, &estado);
-    }
-
-    return (KeyType)llave_global;
 }
 
-/* ----------------------------------------------------------------
- * Funcion: main
- * Proposito: Inicializa MPI, distribuye datos con MPI_Bcast, reparte
- *            el espacio de llaves, lanza la busqueda y reporta
- *            resultados y tiempo paralelo.
- * ---------------------------------------------------------------- */
-int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
+/* Entradas: identificadores MPI, rango propio, cifrado, palabra y buffer.
+ * Salida: el mismo reporte global en todos los ranks.
+ * Invariantes: una recepcion por reporte y una por STOP, publicadas antes
+ * de buscar. Rank 0 nunca se envia a si mismo. Todos los requests se
+ * completan antes del Bcast final, sin depender del buffering de Send. */
+Reporte buscar_en_rango(int rank, int size, Rango rango,
+                        const std::vector<char> &ciph, const std::string &keyword,
+                        std::vector<char> &trabajo) {
+    Reporte resultado{SIN_LLAVE, 0};
+    // Una palabra mayor que el texto no puede aparecer en ningun descifrado.
+    if (keyword.size() > ciph.size()) rango.siguiente = rango.fin;
 
-    int rank, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    /* --- Programacion defensiva: argumentos (valida en rank 0) --- */
-    if (argc < 3) {
-        if (rank == 0)
-            std::cerr << "Uso: mpirun -np <N> " << argv[0]
-                      << " <archivo_cifrado> <palabra_clave> [limite] [modo]\n"
-                      << "  modo: bloque (defecto) | ciclico\n";
-        MPI_Finalize();
-        return 1;
-    }
-    std::string ruta = argv[1];
-    std::string keyword = argv[2];
-    KeyType limite = (argc >= 4) ? (KeyType)std::stoull(argv[3])
-                                 : LIMITE_POR_DEFECTO;
-    std::string modo = (argc >= 5) ? argv[4] : "bloque";
-
-    if (modo != "bloque" && modo != "ciclico") {
-        if (rank == 0)
-            std::cerr << "Error: modo invalido '" << modo
-                      << "'. Use 'bloque' o 'ciclico'.\n";
-        MPI_Finalize();
-        return 1;
-    }
-
-    /* --- rank 0 carga el texto cifrado; comparte estado via Bcast --- */
-    std::vector<char> ciph;
-    int len = 0;
-    if (rank == 0) {
-        len = leer_archivo_cifrado(ruta, ciph);
-        if (keyword.empty()) {
-            std::cerr << "Error: la palabra clave no puede estar vacia\n";
-            len = -1;
+    if (rank != 0) {
+        int stop = 0, completado = 0;
+        MPI_Request recepcion_stop;
+        MPI_Irecv(&stop, 1, MPI_INT, 0, TAG_STOP, MPI_COMM_WORLD, &recepcion_stop);
+        while (rango.siguiente < rango.fin && resultado[0] == SIN_LLAVE) {
+            MPI_Test(&recepcion_stop, &completado, MPI_STATUS_IGNORE);
+            if (completado) break;
+            buscar_lote(rango, ciph, keyword, trabajo, resultado);
+        }
+        // El maestro ya tiene una recepcion especifica para este rank.
+        MPI_Send(resultado.data(), 2, MPI_UINT64_T, 0, TAG_RESULTADO, MPI_COMM_WORLD);
+        // Tambien los trabajadores agotados reciben STOP. Si Test completo
+        // el request, Wait acepta MPI_REQUEST_NULL y retorna inmediatamente.
+        MPI_Wait(&recepcion_stop, MPI_STATUS_IGNORE);
+    } else {
+        std::vector<Reporte> reportes(size, Reporte{SIN_LLAVE, 0});
+        std::vector<MPI_Request> pendientes(size, MPI_REQUEST_NULL);
+        for (int r = 1; r < size; ++r) {
+            MPI_Irecv(reportes[r].data(), 2, MPI_UINT64_T, r, TAG_RESULTADO,
+                      MPI_COMM_WORLD, &pendientes[r]);
+        }
+        int restantes = size - 1;
+        KeyType candidata = SIN_LLAVE;
+        while (candidata == SIN_LLAVE) {
+            for (int r = 1; r < size; ++r) {
+                if (pendientes[r] == MPI_REQUEST_NULL) continue;
+                int listo = 0;
+                MPI_Test(&pendientes[r], &listo, MPI_STATUS_IGNORE);
+                if (listo) {
+                    --restantes;
+                    candidata = std::min(candidata, reportes[r][0]);
+                }
+            }
+            if (candidata != SIN_LLAVE) break;
+            if (rango.siguiente < rango.fin) {
+                buscar_lote(rango, ciph, keyword, trabajo, reportes[0]);
+                candidata = reportes[0][0];
+            } else if (restantes > 0) {
+                // Sin trabajo local, espera un reporte en lugar de ocupar CPU.
+                int indice;
+                MPI_Waitany(size, pendientes.data(), &indice, MPI_STATUS_IGNORE);
+                --restantes;
+                candidata = reportes[indice][0];
+            } else {
+                break; // Todos agotaron sus rangos sin solucion.
+            }
+        }
+        // STOP tiene un receptor por trabajador, aun si este ya reporto.
+        // Los reportes concurrentes siguen teniendo sus Irecv pendientes.
+        int stop = 1;
+        for (int r = 1; r < size; ++r) {
+            MPI_Send(&stop, 1, MPI_INT, r, TAG_STOP, MPI_COMM_WORLD);
+        }
+        MPI_Waitall(size, pendientes.data(), MPI_STATUSES_IGNORE);
+        for (const auto &reporte : reportes) {
+            resultado[0] = std::min(resultado[0], reporte[0]);
+            resultado[1] += reporte[1];
         }
     }
+    // Incluye hallazgos simultaneos ya recibidos. No promete la menor llave
+    // del espacio, sino una llave valida y el mismo resultado para todos.
+    MPI_Bcast(resultado.data(), 2, MPI_UINT64_T, 0, MPI_COMM_WORLD);
+    return resultado;
+}
 
-    /* Difundimos la longitud (o el codigo de error) a todos. */
-    MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    if (len < 0) { /* error detectado en rank 0: salida ordenada */
+/* Rank 0 valida y lee una sola vez; transmite estado, opciones y datos.
+ * Los errores de entrada finalizan ordenadamente. Una excepcion inesperada
+ * en cualquier rank aborta el comunicador para no dejar pares esperando. */
+int main(int argc, char **argv) {
+    MPI_Init(&argc, &argv);
+    int rank = 0, size = 1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    try {
+        OpcionesBusqueda op;
+        std::vector<char> ciph;
+        int valido = 1;
+        if (rank == 0) {
+            try {
+                op = leer_opciones(argc, argv, true);
+                ciph = leer_archivo(op.ruta, true);
+            } catch (const std::exception &error) {
+                std::cerr << "Error: " << error.what() << '\n';
+                valido = 0;
+            }
+        }
+        MPI_Bcast(&valido, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        if (!valido) {
+            MPI_Finalize();
+            return 1;
+        }
+        int len = static_cast<int>(ciph.size());
+        int kw_len = static_cast<int>(op.keyword.size());
+        int ciclico = op.ciclico ? 1 : 0;
+        MPI_Bcast(&op.limite, 1, MPI_UINT64_T, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&ciclico, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&kw_len, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        op.ciclico = ciclico != 0;
+        if (rank != 0) {
+            ciph.resize(len);
+            op.keyword.resize(kw_len);
+        }
+        MPI_Bcast(ciph.data(), len, MPI_CHAR, 0, MPI_COMM_WORLD);
+        MPI_Bcast(op.keyword.data(), kw_len, MPI_CHAR, 0, MPI_COMM_WORLD);
+        std::vector<char> trabajo(ciph.size());
+        const auto rango = repartir(op.limite, rank, size, op.ciclico);
+        if (rank == 0) {
+            std::cout << "=== Fuerza bruta PARALELA (MPI) ===\n"
+                      << "Procesos        : " << size << '\n'
+                      << "Modo de reparto : " << (op.ciclico ? "ciclico" : "bloque") << '\n';
+            imprimir_entrada(op, ciph.size());
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        const double t0 = MPI_Wtime();
+        const auto resultado = buscar_en_rango(rank, size, rango, ciph, op.keyword, trabajo);
+        const double local = MPI_Wtime() - t0;
+        double maximo = 0;
+        MPI_Reduce(&local, &maximo, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        if (rank == 0) {
+            imprimir_resultado(resultado[0], ciph, resultado[1]);
+            std::cout << "Tiempo paralelo  : " << maximo << " segundos.\n";
+        }
         MPI_Finalize();
+        return resultado[0] == SIN_LLAVE ? 2 : 0;
+    } catch (const std::exception &error) {
+        std::cerr << "Error en rank " << rank << ": " << error.what() << '\n';
+        MPI_Abort(MPI_COMM_WORLD, 1);
         return 1;
     }
-
-    /* Difundimos el contenido cifrado. */
-    if (rank != 0) ciph.resize(len);
-    MPI_Bcast(ciph.data(), len, MPI_CHAR, 0, MPI_COMM_WORLD);
-
-    /* Difundimos la palabra clave (longitud + contenido). */
-    int kw_len = (int)keyword.size();
-    MPI_Bcast(&kw_len, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    std::vector<char> kw_buf(kw_len + 1);
-    if (rank == 0) memcpy(kw_buf.data(), keyword.data(), kw_len);
-    MPI_Bcast(kw_buf.data(), kw_len, MPI_CHAR, 0, MPI_COMM_WORLD);
-    kw_buf[kw_len] = '\0';
-
-    if (rank == 0) {
-        std::cout << "=== Fuerza bruta PARALELA (MPI) ===\n";
-        std::cout << "Procesos        : " << size << "\n";
-        std::cout << "Modo de reparto : " << modo << "\n";
-        std::cout << "Archivo cifrado : " << ruta << "\n";
-        std::cout << "Palabra clave   : " << kw_buf.data() << "\n";
-        std::cout << "Espacio llaves  : [0, " << limite << ")\n";
-        std::cout << "Longitud texto  : " << len << " bytes\n";
-    }
-
-    /* --- Definicion de la porcion de cada proceso --- *
-     * bloque : inicio = rank*chunk, paso = 1 (rango contiguo).
-     * ciclico: inicio = rank,       paso = size (intercalado). */
-    KeyType inicio, paso, cota_local;
-    if (modo == "bloque") {
-        KeyType chunk = (limite + size - 1) / size; /* techo */
-        inicio = (KeyType)rank * chunk;
-        paso = 1;
-        cota_local = inicio + chunk;
-        if (cota_local > limite) cota_local = limite;
-    } else { /* ciclico */
-        inicio = (KeyType)rank;
-        paso = (KeyType)size;
-        cota_local = limite;
-    }
-
-    /* --- Busqueda con medicion de tiempo paralelo --- */
-    MPI_Barrier(MPI_COMM_WORLD); /* arranque sincronizado */
-    double t0 = MPI_Wtime();
-
-    KeyType llave = buscar_en_rango(rank, size, inicio, paso, cota_local,
-                                    ciph.data(), len, kw_buf.data());
-
-    double t1 = MPI_Wtime();
-    double local = t1 - t0, maximo = 0.0;
-    /* El tiempo paralelo real es el del proceso mas lento. */
-    MPI_Reduce(&local, &maximo, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-
-    /* --- Despliegue de resultados (rank 0) --- */
-    if (rank == 0) {
-        std::vector<char> descifrado(len + 1);
-        memcpy(descifrado.data(), ciph.data(), len);
-        descifrado[len] = '\0';
-        decrypt(llave, descifrado.data(), len);
-
-        std::cout << "\nLlave encontrada : " << llave << "\n";
-        std::cout << "Texto descifrado : " << descifrado.data() << "\n";
-        std::cout << "Tiempo paralelo  : " << maximo << " segundos.\n";
-    }
-
-    MPI_Finalize();
-    return 0;
 }
