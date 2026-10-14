@@ -1,2 +1,12 @@
-textoequipo10.bin
+# Binarios compilados
 bruteforce
+bruteforce_seq
+bruteforce_mpi
+cifrar
+
+# Archivos cifrados generados
+*.bin
+
+# Artefactos del sistema
+.DS_Store
+*.o

@@ -1,0 +1,1 @@
+Los equipos deben utilizar MPI para encontrar la llave privada mediante fuerza bruta sobre DES. La palabra clave jacaranda es unica en este texto.
